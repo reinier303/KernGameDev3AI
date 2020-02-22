@@ -599,7 +599,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 1
   yPos: 15
-  zoomSpeed: 2
+  zoomSpeed: 0
   lerpSpeed: 1
 --- !u!1 &1444179292
 GameObject:
