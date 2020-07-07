@@ -23,9 +23,12 @@ public class Astar
         List<Node> ClosedList = new List<Node>();
 
         //Initial Node
-        Node currentNode = new Node(startPos, null, 0, Vector2.Distance(startPos, endPos));
+        Node startNode = new Node(startPos, null, 0,0);
+        Node targetNode = new Node(endPos, null, 0, 0);
 
-        OpenList.Add(currentNode);
+        OpenList.Add(startNode);
+
+        Node currentNode = OpenList[0];
 
         int iterations = 0;
 
@@ -34,15 +37,14 @@ public class Astar
             iterations++;
 
             //Get lowest
-            Node lowest = null;
+
             foreach (Node node in OpenList)
             {
-                if(lowest == null || node.FScore < lowest.FScore || node.FScore == lowest.FScore && node.HScore < lowest.HScore)
+                if (node.FScore < currentNode.FScore || node.FScore == currentNode.FScore && node.HScore < currentNode.HScore)
                 {
-                    lowest = node;
+                    currentNode = node;
                 }
             }
-            currentNode = lowest;
 
             //Add current to closed and remove from open
             OpenList.Remove(currentNode);
@@ -60,23 +62,23 @@ public class Astar
                 float HScore = Vector2.Distance(new Vector2Int(neighbourPosition.x, neighbourPosition.y), endPos);
                 Node node = new Node(neighbourPosition, parent, GScore, HScore);
 
-                if (ClosedList.Contains(node))
+                if (ClosedList.Any(n => n.position == neighbourPosition))
                 {
                     continue;
                 }
-                float movementCost = currentNode.GScore + Vector2.Distance(currentNode.position, node.position);
-                if(!OpenList.Contains(node) || node.GScore < movementCost)
+                int moveCost = (int)(GScore + Vector2.Distance(node.position, endPos));
+                if (!OpenList.Any(n => n.position == neighbourPosition) || moveCost < currentNode.FScore)
                 {
-                    node.GScore = currentNode.GScore++;
+                    node.GScore = moveCost;
                     node.HScore = Vector2.Distance(new Vector2Int(node.position.x, node.position.y), endPos);
-                    node.parent = currentNode;
                     if(!OpenList.Contains(node))
                     {
                         OpenList.Add(node);
                     }
                 }
             }
-            if(iterations > 500)
+
+            if(iterations > 2500)
             {
                 break;
             }
@@ -103,24 +105,54 @@ public class Astar
         {
             for (int yy = -1; yy <= 1; yy++)
             {
+                if (Mathf.Abs(xx) == Mathf.Abs(yy))
+                {
+                    continue;
+                }
+
                 int x = gridPosition.x + xx;
                 int y = gridPosition.y + yy;
 
                 //Exclude diagonal neighbours
-                if (x < 0 || x >= grid.GetLength(0) || y < 0 || y >= grid.Rank)
+                if (x < 0 || x >= grid.GetLength(0) || y < 0 || y >= grid.GetLength(1))
                 {
                     continue;
                 }
-
-                if(Mathf.Abs(x) == Mathf.Abs(y))
-                {
-                    continue;
-                }
+                
                 Vector2Int neighbour = grid[x, y].gridPosition;
                 neighbours.Add(neighbour);
             }
         }
+
+        //Remove neighbours at walls
+        Cell currentCell = grid[gridPosition.x, gridPosition.y];
+        neighbours = CheckWalls(neighbours, currentCell);
+
         return neighbours;
+    }
+
+    public List<Vector2Int> CheckWalls(List<Vector2Int> neighbours, Cell cell)
+    {
+        List<Vector2Int> WallCheckedNeighbours = neighbours;
+
+        if (cell.HasWall(Wall.UP))
+        {
+            WallCheckedNeighbours.Remove(new Vector2Int(cell.gridPosition.x , cell.gridPosition.y + 1));
+        }
+        if (cell.HasWall(Wall.DOWN))
+        {
+            WallCheckedNeighbours.Remove(new Vector2Int(cell.gridPosition.x, cell.gridPosition.y - 1));
+        }
+        if (cell.HasWall(Wall.LEFT))
+        {
+            WallCheckedNeighbours.Remove(new Vector2Int(cell.gridPosition.x - 1, cell.gridPosition.y));
+        }
+        if (cell.HasWall(Wall.RIGHT))
+        {
+            WallCheckedNeighbours.Remove(new Vector2Int(cell.gridPosition.x + 1, cell.gridPosition.y));
+        }
+
+        return WallCheckedNeighbours;
     }
 
     /// <summary>
